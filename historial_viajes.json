@@ -1,0 +1,17 @@
+{"usuario": "8207139365", "origen": "a", "destino": "b", "conductor": "Luis P\u00e9rez", "pago": "tarjeta", "precio": "7.50 USD"}
+{"usuario": "8207139365", "origen": "a", "destino": "b", "conductor": "Luis P\u00e9rez", "pago": "efectivo", "precio": "7.50 USD"}
+{"usuario": "8207139365", "origen": "a", "destino": "b", "conductor": "Mar\u00eda G\u00f3mez", "pago": "tarjeta", "precio": "7.50 USD"}
+{"usuario": "8207139365", "origen": "as", "destino": "as", "conductor": "Mar\u00eda G\u00f3mez", "pago": "tarjeta", "precio": "7.50 USD"}
+{"usuario": "8207139365", "origen": "as", "destino": "as", "conductor": "Mar\u00eda G\u00f3mez", "pago": "tarjeta", "precio": "7.50 USD"}
+{"usuario": "8207139365", "origen": "A", "destino": "A", "conductor": "Mar\u00eda G\u00f3mez", "pago": "tarjeta", "precio": "7.50 USD"}
+{"usuario": "8207139365", "origen": "A", "destino": "A", "conductor": "Mar\u00eda G\u00f3mez", "pago": "tarjeta", "precio": "7.50 USD"}
+{"usuario": "8207139365", "origen": "a", "destino": "b", "conductor": "Carlos Mart\u00ednez", "pago": "tarjeta", "precio": "7.50 USD"}
+{"usuario": "8207139365", "origen": "a", "destino": "b", "conductor": "Luis P\u00e9rez", "pago": "qr", "precio": "7.50 USD"}
+{"usuario": "8207139365", "origen": "a", "destino": "b", "conductor": "Luis P\u00e9rez", "pago": "qr", "precio": "7.50 USD"}
+{"usuario": "8207139365", "origen": "ramada", "destino": "a", "conductor": "Mar\u00eda G\u00f3mez", "pago": "qr", "precio": "7.50 USD"}
+{"usuario": "8207139365", "origen": "a", "destino": "b", "conductor": "Carlos Mart\u00ednez", "pago": "qr", "precio": "7.50 USD"}
+{"usuario": "8207139365", "origen": "a", "destino": "b", "conductor": "Carlos Mart\u00ednez", "pago": "qr", "precio": "7.50 USD"}
+{"usuario": "8207139365", "origen": "a", "destino": "b", "conductor": "Luis P\u00e9rez", "pago": "qr", "precio": "7.50 USD"}
+{"usuario": "8207139365", "origen": "a", "destino": "b", "conductor": "Carlos Mart\u00ednez", "pago": "qr", "precio": "7.50 USD"}
+{"usuario": "8207139365", "origen": "a", "destino": "b", "conductor": "Carlos Mart\u00ednez", "pago": "qr", "precio": "7.50 USD"}
+{"usuario": null, "origen": "ramada", "destino": "3 anillo", "conductor": "Mar\u00eda G\u00f3mez", "pago": "qr", "precio": "7.50 USD"}
