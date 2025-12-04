@@ -9,6 +9,7 @@ import os
 from flask import Flask, request
 import qrcode
 from io import BytesIO
+import requests
 
 # --- CONFIGURACIÓN ---
 TOKEN = "8214450317:AAHprh0zHTuPYSBJ0xnOFDPeeyySIm57kmo"
@@ -107,21 +108,35 @@ async def viaje_callback(update, context):
         await query.edit_message_text("❌ Viaje cancelado.")
         return ConversationHandler.END
 
-    await query.edit_message_text("🚗 Conductor asignado, llegando...")
+    # Asignar conductor automáticamente (por ahora, el primero de la lista)
+    conductor = CONDUCTORES[0]
+    context.user_data["conductor"] = conductor
+
+    await query.edit_message_text(f"🚗 Conductor asignado: {conductor['nombre']}, llegando...")
+
+    # Generar QR con datos del viaje
+    qr_data = f"Origen: {context.user_data['origen']}\nDestino: {context.user_data['destino']}\nConductor: {conductor['nombre']} - {conductor['auto']} ({conductor['placa']})"
+    qr = qrcode.QRCode()
+    qr.add_data(qr_data)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+    bio = BytesIO()
+    img.save(bio, format="PNG")
+    bio.seek(0)
+
+    await query.message.reply_photo(photo=bio, caption="📱 Tu código QR del viaje")
 
     return CALIFICAR
 
 async def recibir_calificacion(update, context):
     query = update.callback_query
     await query.answer()
-
     await query.edit_message_text("⭐ Gracias por tu calificación!")
     return ConversationHandler.END
 
 async def cancelar(update, context):
     await update.message.reply_text("❌ Conversación cancelada.")
     return ConversationHandler.END
-
 
 # --- CONVERSATION HANDLER ---
 conv = ConversationHandler(
@@ -143,13 +158,18 @@ tg_app.add_handler(conv)
 @app.post("/webhook")
 def webhook():
     data = request.get_json(force=True)
-    asyncio.run(tg_app.update_queue.put(tg_app.bot._deserialize_update(data)))
+    tg_app.create_task(tg_app.update_queue.put(tg_app.bot._deserialize_update(data)))
     return {"ok": True}
 
-@app.before_first_request
-def activate_webhook():
-    import requests
-    requests.get(f"https://api.telegram.org/bot{TOKEN}/setWebhook?url={WEBHOOK_URL}")
+# --- ACTIVAR WEBHOOK AL INICIAR ---
+try:
+    r = requests.get(f"https://api.telegram.org/bot{TOKEN}/setWebhook?url={WEBHOOK_URL}")
+    if r.status_code == 200 and r.json().get("ok"):
+        print("✅ Webhook activado correctamente")
+    else:
+        print("⚠️ Error al activar webhook:", r.text)
+except Exception as e:
+    print("⚠️ No se pudo activar webhook:", e)
 
 # --- EJECUTAR ---
 if __name__ == "__main__":
