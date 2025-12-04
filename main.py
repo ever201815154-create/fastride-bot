@@ -1,19 +1,18 @@
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+import os
+import requests
+import asyncio
+from io import BytesIO
+import math
+from flask import Flask, request
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (
     Application, CommandHandler, CallbackQueryHandler,
-    ConversationHandler, MessageHandler, filters
+    ConversationHandler, MessageHandler, filters, ContextTypes
 )
-import asyncio
-import math
-import os
-from flask import Flask, request
-import qrcode
-from io import BytesIO
-import requests  # ✅ CORREGIDO: antes estaba 'solicitudes'
 
 # --- CONFIGURACIÓN ---
-TOKEN = "8214450317:AAHprh0zHTuPYSBJ0xnOFDPeeyySIm57kmo"
-WEBHOOK_URL = "https://fastride-bot.onrender.com/webhook"
+TOKEN = os.environ.get("TELEGRAM_TOKEN")
+WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
 
 app = Flask(__name__)
 
@@ -48,91 +47,53 @@ tg_app = Application.builder().token(TOKEN).build()
 #      HANDLERS FUNCIONALES
 # -------------------------------
 
-async def start(update, context):
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("🚗 Bot funcionando en Render!\n\nEnvíame tu origen para comenzar.")
     return ELEGIR_ORIGEN
 
-async def menu_callback(update, context):
-    await update.callback_query.answer()
-    await update.callback_query.edit_message_text("Elegiste una opción del menú.")
-    return ELEGIR_ORIGEN
-
-async def recibir_origen(update, context):
+async def recibir_origen(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["origen"] = update.message.text
     await update.message.reply_text("📍 Origen guardado.\nAhora dime cuál será el destino.")
     return ELEGIR_DESTINO
 
-async def recibir_destino(update, context):
+async def recibir_destino(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["destino"] = update.message.text
-
     keyboard = [
         [InlineKeyboardButton("💵 Efectivo", callback_data="pago_efectivo")],
         [InlineKeyboardButton("💳 Tarjeta", callback_data="pago_tarjeta")]
     ]
-
     reply_markup = InlineKeyboardMarkup(keyboard)
-
-    await update.message.reply_text(
-        "💰 Selecciona tu método de pago:",
-        reply_markup=reply_markup
-    )
+    await update.message.reply_text("💰 Selecciona tu método de pago:", reply_markup=reply_markup)
     return METODO_PAGO
 
-async def metodo_pago_callback(update, context):
+async def metodo_pago_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-
     context.user_data["pago"] = query.data
-
-    await query.edit_message_text(
-        f"Pago seleccionado: {query.data.replace('pago_', '').upper()}\n\nConfirmar viaje?"
-    )
-
+    await query.edit_message_text(f"Pago seleccionado: {query.data.replace('pago_', '').upper()}\n\nConfirmar viaje?")
     keyboard = [
         [InlineKeyboardButton("✅ Confirmar", callback_data="confirmar_viaje")],
         [InlineKeyboardButton("❌ Cancelar", callback_data="cancelar")]
     ]
-
-    await query.message.reply_text(
-        "¿Deseas continuar?",
-        reply_markup=InlineKeyboardMarkup(keyboard)
-    )
-
+    await query.message.reply_text("¿Deseas continuar?", reply_markup=InlineKeyboardMarkup(keyboard))
     return CONFIRMAR_VIAJE
 
-async def viaje_callback(update, context):
+async def viaje_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-
     if query.data == "cancelar":
         await query.edit_message_text("❌ Viaje cancelado.")
         return ConversationHandler.END
-
-    conductor = CONDUCTORES[0]
-    context.user_data["conductor"] = conductor
-
-    await query.edit_message_text(f"🚗 Conductor asignado: {conductor['nombre']}, llegando...")
-
-    qr_data = f"Origen: {context.user_data['origen']}\nDestino: {context.user_data['destino']}\nConductor: {conductor['nombre']} - {conductor['auto']} ({conductor['placa']})"
-    qr = qrcode.QRCode()
-    qr.add_data(qr_data)
-    qr.make(fit=True)
-    img = qr.make_image(fill_color="black", back_color="white")
-    bio = BytesIO()
-    img.save(bio, format="PNG")
-    bio.seek(0)
-
-    await query.message.reply_photo(photo=bio, caption="📱 Tu código QR del viaje")
-
+    await query.edit_message_text("🚗 Conductor asignado, llegando...")
     return CALIFICAR
 
-async def recibir_calificacion(update, context):
+async def recibir_calificacion(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     await query.edit_message_text("⭐ Gracias por tu calificación!")
     return ConversationHandler.END
 
-async def cancelar(update, context):
+async def cancelar(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("❌ Conversación cancelada.")
     return ConversationHandler.END
 
@@ -140,9 +101,8 @@ async def cancelar(update, context):
 conv = ConversationHandler(
     entry_points=[CommandHandler("start", start)],
     states={
-        MENU: [CallbackQueryHandler(menu_callback)],
-        ELEGIR_ORIGEN: [MessageHandler(filters.TEXT, recibir_origen)],
-        ELEGIR_DESTINO: [MessageHandler(filters.TEXT, recibir_destino)],
+        ELEGIR_ORIGEN: [MessageHandler(filters.TEXT & ~filters.COMMAND, recibir_origen)],
+        ELEGIR_DESTINO: [MessageHandler(filters.TEXT & ~filters.COMMAND, recibir_destino)],
         METODO_PAGO: [CallbackQueryHandler(metodo_pago_callback)],
         CONFIRMAR_VIAJE: [CallbackQueryHandler(viaje_callback)],
         CALIFICAR: [CallbackQueryHandler(recibir_calificacion)],
@@ -156,18 +116,15 @@ tg_app.add_handler(conv)
 @app.post("/webhook")
 def webhook():
     data = request.get_json(force=True)
-    tg_app.create_task(tg_app.update_queue.put(tg_app.bot._deserialize_update(data)))
+    asyncio.create_task(tg_app.update_queue.put(tg_app.bot._deserialize_update(data)))
     return {"ok": True}
 
-# --- ACTIVAR WEBHOOK AL INICIAR ---
-try:
-    r = requests.get(f"https://api.telegram.org/bot{TOKEN}/setWebhook?url={WEBHOOK_URL}")
-    if r.status_code == 200 and r.json().get("ok"):
-        print("✅ Webhook activado correctamente")
-    else:
-        print("⚠️ Error al activar webhook:", r.text)
-except Exception as e:
-    print("⚠️ No se pudo activar webhook:", e)
+# --- ACTIVAR WEBHOOK ---
+def set_webhook():
+    resp = requests.get(f"https://api.telegram.org/bot{TOKEN}/setWebhook?url={WEBHOOK_URL}")
+    print(resp.json())
+
+set_webhook()
 
 # --- EJECUTAR ---
 if __name__ == "__main__":
