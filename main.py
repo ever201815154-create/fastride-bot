@@ -1,16 +1,14 @@
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, InputFile
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Application, CommandHandler, CallbackQueryHandler,
     ConversationHandler, MessageHandler, filters
 )
 import asyncio
-import random
 import math
-from io import BytesIO
-import qrcode
-
-from flask import Flask, request
 import os
+from flask import Flask, request
+import qrcode
+from io import BytesIO
 
 # --- CONFIGURACIÓN ---
 TOKEN = "8214450317:AAHprh0zHTuPYSBJ0xnOFDPeeyySIm57kmo"
@@ -53,22 +51,107 @@ async def start(update, context):
     await update.message.reply_text("🚗 Bot funcionando en Render!\n\nEnvíame tu origen para comenzar.")
     return ELEGIR_ORIGEN
 
-
 async def menu_callback(update, context):
     await update.callback_query.answer()
     await update.callback_query.edit_message_text("Elegiste una opción del menú.")
     return ELEGIR_ORIGEN
-
 
 async def recibir_origen(update, context):
     context.user_data["origen"] = update.message.text
     await update.message.reply_text("📍 Origen guardado.\nAhora dime cuál será el destino.")
     return ELEGIR_DESTINO
 
-
 async def recibir_destino(update, context):
     context.user_data["destino"] = update.message.text
 
     keyboard = [
         [InlineKeyboardButton("💵 Efectivo", callback_data="pago_efectivo")],
-        [InlineKeyboardButton("💳 Tarjeta", callback_data_]()
+        [InlineKeyboardButton("💳 Tarjeta", callback_data="pago_tarjeta")]
+    ]
+
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    await update.message.reply_text(
+        "💰 Selecciona tu método de pago:",
+        reply_markup=reply_markup
+    )
+    return METODO_PAGO
+
+async def metodo_pago_callback(update, context):
+    query = update.callback_query
+    await query.answer()
+
+    context.user_data["pago"] = query.data
+
+    await query.edit_message_text(
+        f"Pago seleccionado: {query.data.replace('pago_', '').upper()}\n\nConfirmar viaje?"
+    )
+
+    keyboard = [
+        [InlineKeyboardButton("✅ Confirmar", callback_data="confirmar_viaje")],
+        [InlineKeyboardButton("❌ Cancelar", callback_data="cancelar")]
+    ]
+
+    await query.message.reply_text(
+        "¿Deseas continuar?",
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
+
+    return CONFIRMAR_VIAJE
+
+async def viaje_callback(update, context):
+    query = update.callback_query
+    await query.answer()
+
+    if query.data == "cancelar":
+        await query.edit_message_text("❌ Viaje cancelado.")
+        return ConversationHandler.END
+
+    await query.edit_message_text("🚗 Conductor asignado, llegando...")
+
+    return CALIFICAR
+
+async def recibir_calificacion(update, context):
+    query = update.callback_query
+    await query.answer()
+
+    await query.edit_message_text("⭐ Gracias por tu calificación!")
+    return ConversationHandler.END
+
+async def cancelar(update, context):
+    await update.message.reply_text("❌ Conversación cancelada.")
+    return ConversationHandler.END
+
+
+# --- CONVERSATION HANDLER ---
+conv = ConversationHandler(
+    entry_points=[CommandHandler("start", start)],
+    states={
+        MENU: [CallbackQueryHandler(menu_callback)],
+        ELEGIR_ORIGEN: [MessageHandler(filters.TEXT, recibir_origen)],
+        ELEGIR_DESTINO: [MessageHandler(filters.TEXT, recibir_destino)],
+        METODO_PAGO: [CallbackQueryHandler(metodo_pago_callback)],
+        CONFIRMAR_VIAJE: [CallbackQueryHandler(viaje_callback)],
+        CALIFICAR: [CallbackQueryHandler(recibir_calificacion)],
+    },
+    fallbacks=[CommandHandler("cancel", cancelar)],
+)
+
+tg_app.add_handler(conv)
+
+# --- WEBHOOK ---
+@app.post("/webhook")
+def webhook():
+    data = request.get_json(force=True)
+    asyncio.run(tg_app.update_queue.put(tg_app.bot._deserialize_update(data)))
+    return {"ok": True}
+
+@app.before_first_request
+def activate_webhook():
+    import requests
+    requests.get(f"https://api.telegram.org/bot{TOKEN}/setWebhook?url={WEBHOOK_URL}")
+
+# --- EJECUTAR ---
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
