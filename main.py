@@ -1,7 +1,6 @@
 import os
 import requests
 import asyncio
-from io import BytesIO
 import math
 from flask import Flask, request
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
@@ -10,9 +9,9 @@ from telegram.ext import (
     ConversationHandler, MessageHandler, filters, ContextTypes
 )
 
-# --- CONFIGURACIÓN ---
-TOKEN = os.environ.get("TELEGRAM_TOKEN")
-WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
+# --- CONFIGURACIÓN (TOKEN EJEMPLO) ---
+TOKEN = "8214450317:AAHprh0zHTuPYSBJ0xnOFDPeeyySIm57kmo"  # token de ejemplo
+WEBHOOK_URL = "https://fastride-bot.onrender.com/webhook"
 
 app = Flask(__name__)
 
@@ -46,7 +45,6 @@ tg_app = Application.builder().token(TOKEN).build()
 # -------------------------------
 #      HANDLERS FUNCIONALES
 # -------------------------------
-
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("🚗 Bot funcionando en Render!\n\nEnvíame tu origen para comenzar.")
     return ELEGIR_ORIGEN
@@ -121,8 +119,9 @@ def webhook():
 
 # --- ACTIVAR WEBHOOK ---
 def set_webhook():
-    resp = requests.get(f"https://api.telegram.org/bot{TOKEN}/setWebhook?url={WEBHOOK_URL}")
-    print(resp.json())
+    url = f"https://api.telegram.org/bot{TOKEN}/setWebhook?url={WEBHOOK_URL}"
+    resp = requests.get(url)
+    print("set_webhook:", resp.json())
 
 set_webhook()
 

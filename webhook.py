@@ -3,9 +3,9 @@ from telegram import Update, Bot
 from telegram.ext import Application, Dispatcher, MessageHandler, filters
 import asyncio
 
-TOKEN = ""
+TOKEN = "8214450317:AAHprh0zHTuPYSBJ0xnOFDPeeyySIm57kmo"
 
-app = Flask(_name_)
+app = Flask(__name__)
 
 bot = Bot(token=TOKEN)
 
@@ -42,5 +42,5 @@ def index():
     return "Webhook activo!", 200
 
 
-if _name_ == "_main_":
+if __name__ == "__main__":
     app.run(port=5000)
