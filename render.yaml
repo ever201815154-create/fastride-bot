@@ -1,0 +1,8 @@
+keyboard = [
+    [
+        InlineKeyboardButton("💳 Tarjeta", callback_data="tarjeta"),
+        InlineKeyboardButton("💵 Efectivo", callback_data="efectivo")
+    ]
+]
+reply_markup = InlineKeyboardMarkup(keyboard)
+await update.message.reply_text("Selecciona tu método de pago:", reply_markup=reply_markup)
