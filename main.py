@@ -9,7 +9,7 @@ import os
 from flask import Flask, request
 import qrcode
 from io import BytesIO
-import requests
+import requests  # ✅ CORREGIDO: antes estaba 'solicitudes'
 
 # --- CONFIGURACIÓN ---
 TOKEN = "8214450317:AAHprh0zHTuPYSBJ0xnOFDPeeyySIm57kmo"
@@ -108,13 +108,11 @@ async def viaje_callback(update, context):
         await query.edit_message_text("❌ Viaje cancelado.")
         return ConversationHandler.END
 
-    # Asignar conductor automáticamente
     conductor = CONDUCTORES[0]
     context.user_data["conductor"] = conductor
 
     await query.edit_message_text(f"🚗 Conductor asignado: {conductor['nombre']}, llegando...")
 
-    # Generar QR con datos del viaje
     qr_data = f"Origen: {context.user_data['origen']}\nDestino: {context.user_data['destino']}\nConductor: {conductor['nombre']} - {conductor['auto']} ({conductor['placa']})"
     qr = qrcode.QRCode()
     qr.add_data(qr_data)
