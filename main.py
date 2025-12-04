@@ -108,7 +108,7 @@ async def viaje_callback(update, context):
         await query.edit_message_text("❌ Viaje cancelado.")
         return ConversationHandler.END
 
-    # Asignar conductor automáticamente (por ahora, el primero de la lista)
+    # Asignar conductor automáticamente
     conductor = CONDUCTORES[0]
     context.user_data["conductor"] = conductor
 
